@@ -1,2 +1,11 @@
-# Weather-Data-Visualization
-This is a data visualization project by college students Sourav  and Avijt Sakkarwal of Computer Science named "WEATHER DATA VISUALIZATION".  This project is a comprehensive exploration of historical weather data using Python for data analysis and Tableau for interactive visualization.
+# Weather Data Visualization
+
+Weather Data Visualization is a project focused on exploring historical weather data and presenting insights through clear, interactive visuals.
+
+## Project Overview
+- Analyze historical weather datasets using Python.
+- Create visual stories and dashboards using Tableau.
+- Highlight trends, patterns, and comparisons in weather conditions.
+
+## Ownership
+This project is wholly made and owned by Sourav.
