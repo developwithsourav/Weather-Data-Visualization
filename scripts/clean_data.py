@@ -62,6 +62,36 @@ SEASONS = {
 }
 
 
+def check_quality(weather):
+    """Stop with an error if the data breaks any basic rule.
+
+    Each check is a name and the number of rows that break it. Zero means the check passed.
+    """
+    days_per_city = weather.groupby("city")["date"].nunique()
+    expected_days = (weather["date"].max() - weather["date"].min()).days + 1
+
+    checks = {
+        "missing values": int(weather.isna().any(axis=1).sum()),
+        "duplicate city and date": int(weather.duplicated(subset=["city", "date"]).sum()),
+        "cities with days missing": int((days_per_city != expected_days).sum()),
+        "minimum above maximum temperature": int((weather["temp_min_c"] > weather["temp_max_c"]).sum()),
+        "mean outside minimum to maximum": int(((weather["temp_mean_c"] < weather["temp_min_c"])
+                                                | (weather["temp_mean_c"] > weather["temp_max_c"])).sum()),
+        "humidity outside 0 to 100": int((~weather["humidity_pct"].between(0, 100)).sum()),
+        "negative rain": int((weather["rain_mm"] < 0).sum()),
+        "pressure outside 900 to 1100 hPa": int((~weather["pressure_hpa"].between(900, 1100)).sum()),
+        "wind direction outside 0 to 360": int((~weather["wind_direction_deg"].between(0, 360)).sum()),
+        "unknown weather code": int(weather["weather"].isna().sum()),
+    }
+
+    print("Data checks:")
+    for name, failures in checks.items():
+        print(f"  {'ok  ' if failures == 0 else 'FAIL'}  {name}: {failures}")
+
+    if any(checks.values()):
+        raise SystemExit("Data checks failed. Fix the data before drawing charts.")
+
+
 def main():
     weather = pd.read_csv(RAW_FILE).rename(columns=NEW_NAMES)
     cities = pd.read_csv(CITIES_FILE)
@@ -75,17 +105,7 @@ def main():
     # Add latitude and longitude so Tableau can draw a map.
     weather = weather.merge(cities, on="city", how="left")
 
-    # Report anything that looks wrong instead of hiding it.
-    missing = weather.isna().sum()
-    missing = missing[missing > 0]
-    if missing.empty:
-        print("No missing values.")
-    else:
-        print("Missing values per column:")
-        print(missing)
-
-    duplicates = weather.duplicated(subset=["city", "date"]).sum()
-    print(f"Duplicate city/date rows: {duplicates}")
+    check_quality(weather)
 
     weather = weather.sort_values(["city", "date"])
     CLEAN_FILE.parent.mkdir(parents=True, exist_ok=True)

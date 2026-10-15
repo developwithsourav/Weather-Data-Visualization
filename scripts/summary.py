@@ -72,6 +72,75 @@ def main():
     print("\nShare of days by weather type (%)")
     print((weather["weather"].value_counts(normalize=True) * 100).round(1))
 
+    year_by_year(weather)
+    rain_pattern(weather)
+    pressure_and_humidity(weather)
+
+
+def year_by_year(weather):
+    """Figures for the year-on-year part of the report."""
+    print("\nYear by year")
+    yearly = weather.groupby("year")["temp_mean_c"].mean()
+    print("  mean temperature, all cities:", {year: round(value, 2) for year, value in yearly.items()})
+
+    warmest = weather.groupby(["year", "city"])["temp_mean_c"].mean().unstack().idxmax()
+    print("  cities whose warmest year it was:", warmest.value_counts().sort_index().to_dict())
+
+    hot = weather[weather["temp_max_c"] >= 45]
+    print("  city-days at 45 °C or more:", hot.groupby("year").size().to_dict())
+    may_2024 = hot[(hot["year"] == 2024) & (hot["month"] == 5)]
+    print(f"  of those in May 2024: {len(may_2024)} city-days in {may_2024['city'].nunique()} cities")
+
+    delhi = weather[(weather["city"] == "Delhi") & (weather["date"] == "2024-05-28")]
+    print(f"  Delhi maximum on 2024-05-28: {delhi['temp_max_c'].iloc[0]}")
+
+    monsoon = weather[weather["season"] == "Monsoon"].groupby(["year", "city"])["rain_mm"].sum().unstack()
+    print("  monsoon rain, average of cities (mm):", monsoon.mean(axis=1).round(0).to_dict())
+    print(f"  five-year average: {monsoon.mean(axis=1).mean():.0f}")
+    compared = (monsoon.loc[2024] / monsoon.mean() * 100).sort_values()
+    print(f"  2024 monsoon against each city's own average: from {compared.index[0]} "
+          f"{compared.iloc[0]:.0f}% to {compared.index[-1]} {compared.iloc[-1]:.0f}%")
+    print(f"  cities more than 20% above their own average in 2024: {(compared > 120).sum()}")
+    print(f"  Guwahati 2024: {compared['Guwahati']:.0f}%")
+
+
+def rain_pattern(weather):
+    """How rain is spread over the year: a few big days or many small ones."""
+    print("\nHow rain arrives")
+
+    def wettest_ten_share(rain):
+        return rain.nlargest(10).sum() / rain.sum() * 100
+
+    share = weather.groupby(["city", "year"])["rain_mm"].apply(wettest_ten_share).groupby("city").mean()
+    share = share.sort_values()
+    print(f"  share of a year's rain on its 10 wettest days, average of cities: {share.mean():.0f}%")
+    print(f"  lowest: {share.index[0]} {share.iloc[0]:.0f}%, highest: {share.index[-1]} {share.iloc[-1]:.0f}%")
+
+    # A day counts as rainy when it gets 2.5 mm or more.
+    years = weather["year"].nunique()
+    rainy = (weather[weather["rain_mm"] >= 2.5].groupby("city").size() / years).sort_values()
+    print(f"  rainy days a year: fewest {rainy.index[0]} {rainy.iloc[0]:.0f}, most {rainy.index[-1]} {rainy.iloc[-1]:.0f}")
+
+    daily_range = (weather["temp_max_c"] - weather["temp_min_c"]).groupby(weather["city"]).mean().sort_values()
+    print(f"  gap between day and night: smallest {daily_range.index[0]} {daily_range.iloc[0]:.1f} °C, "
+          f"largest {daily_range.index[-1]} {daily_range.iloc[-1]:.1f} °C")
+
+
+def pressure_and_humidity(weather):
+    """Why temperature and pressure move in opposite directions."""
+    print("\nPressure and humidity")
+    pressure = weather.groupby("month")["pressure_hpa"].mean()
+    print(f"  sea-level pressure, all cities: January {pressure[1]:.1f} hPa, July {pressure[7]:.1f} hPa")
+
+    within = weather.groupby("city")[["temp_mean_c", "pressure_hpa"]].corr().xs("pressure_hpa", level=1)
+    within = within["temp_mean_c"].sort_values()
+    print(f"  temperature and pressure inside one city: from {within.index[0]} {within.iloc[0]:.2f} "
+          f"to {within.index[-1]} {within.iloc[-1]:.2f}")
+
+    humidity = weather.groupby(["city", "season"])["humidity_pct"].mean().unstack()
+    print(f"  pre-monsoon humidity: Delhi {humidity.loc['Delhi', 'Pre-monsoon']:.0f}%, "
+          f"Chennai {humidity.loc['Chennai', 'Pre-monsoon']:.0f}%")
+
 
 if __name__ == "__main__":
     main()

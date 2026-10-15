@@ -1,7 +1,7 @@
-"""Draw the charts used in the README.
+"""Draw the charts used in the README and the report.
 
 Reads  data/processed/weather_clean.csv
-Writes PNG files to charts/
+Writes ten PNG files to charts/
 """
 from pathlib import Path
 
@@ -176,6 +176,58 @@ def correlation(weather):
            "7_correlation.png", grid_axis=None)
 
 
+def yearly_temperature(weather):
+    """Line chart: average temperature of all cities, one point per year."""
+    yearly = weather.groupby("year")["temp_mean_c"].mean()
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(yearly.index, yearly.values, color=BLUE, linewidth=2, marker="o", markersize=8)
+    for year, value in yearly.items():
+        ax.annotate(f"{value:.2f}", (year, value), xytext=(0, 10), textcoords="offset points",
+                    ha="center", color=TEXT)
+    ax.set_xticks(yearly.index)
+    ax.set_ylabel("Mean temperature (°C)")
+    ax.set_ylim(yearly.min() - 0.3, yearly.max() + 0.3)
+    finish(fig, ax, "Average temperature rose every year",
+           "Average daily mean temperature across all 30 cities. The axis does not start at zero",
+           "8_yearly_temperature.png")
+
+
+def heat_days(weather):
+    """Bar chart: how many city-days reached 45 °C in each year."""
+    hot = weather[weather["temp_max_c"] >= 45].groupby("year").size()
+    hot = hot.reindex(sorted(weather["year"].unique()), fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.bar(hot.index.astype(str), hot.values, color=BLUE, width=0.6)
+    ax.bar_label(bars, padding=4, color=TEXT)
+    ax.set_ylabel("City-days with a maximum of 45 °C or more")
+    ax.set_ylim(0, hot.max() * 1.15)
+    finish(fig, ax, "The 2024 heatwave",
+           "Days when the maximum reached 45 °C, counted across all 30 cities",
+           "9_heat_days.png")
+
+
+def monsoon_by_year(weather):
+    """Bar chart: June to September rain each year, averaged over the cities."""
+    monsoon = weather[weather["season"] == "Monsoon"]
+    by_year = monsoon.groupby(["year", "city"])["rain_mm"].sum().groupby("year").mean()
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.bar(by_year.index.astype(str), by_year.values, color=BLUE, width=0.6)
+    # Values sit inside the top of each bar so they never collide with the average line.
+    ax.bar_label(bars, labels=[f"{value:.0f}" for value in by_year.values], padding=-18,
+                 color=BACKGROUND, fontweight="bold")
+    ax.axhline(by_year.mean(), color=MUTED, linewidth=1, linestyle="--")
+    ax.annotate(f"5-year average {by_year.mean():.0f} mm", (-0.45, by_year.mean()), xytext=(0, 6),
+                textcoords="offset points", ha="left", color=MUTED)
+    ax.set_ylabel("Rain, June to September (mm)")
+    ax.set_ylim(0, by_year.max() * 1.15)
+    finish(fig, ax, "Monsoon rain by year",
+           "Rain from June to September, averaged over the 30 cities",
+           "10_monsoon_by_year.png")
+
+
 def main():
     weather = pd.read_csv(CLEAN_FILE, parse_dates=["date"])
     CHARTS_DIR.mkdir(exist_ok=True)
@@ -187,6 +239,9 @@ def main():
     humidity_vs_temperature(weather)
     weather_types(weather)
     correlation(weather)
+    yearly_temperature(weather)
+    heat_days(weather)
+    monsoon_by_year(weather)
 
 
 if __name__ == "__main__":

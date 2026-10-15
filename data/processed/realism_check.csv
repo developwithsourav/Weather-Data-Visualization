@@ -1,0 +1,9 @@
+dataset,variable,memory,season,place,verdict
+First version,Temperature,0.98,0.84,0.489,looks real
+First version,Humidity,0.002,0.003,0.015,looks random
+First version,Pressure,-0.003,0.003,0.019,looks random
+Current (Open-Meteo),Temperature,0.979,0.823,0.647,looks real
+Current (Open-Meteo),Humidity,0.952,0.673,0.341,looks real
+Current (Open-Meteo),Pressure,0.975,0.818,0.238,looks real
+Current (Open-Meteo),Wind speed,0.729,0.196,0.488,looks real
+Current (Open-Meteo),Rain,0.477,0.168,0.142,looks real
