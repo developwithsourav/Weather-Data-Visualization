@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Five Years of Indian Weather</title>
+<meta name="description" content="Daily weather for 30 Indian cities from 2021 to 2025: what it shows, how it compares with the official record, and how we caught made-up data in the first version.">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #fcfcfb;
+    --ink: #1d1d1b;
+    --grey: #6b6a66;
+    --rule: #dcdad4;
+    --link: #1f4e8c;
+    --soft: #f1efea;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    font-size: 19px;
+    line-height: 1.62;
+    -webkit-text-size-adjust: 100%;
+  }
+  article { max-width: 680px; margin: 0 auto; padding: 32px 16px 80px; }
+  .wide { margin-left: -40px; margin-right: -40px; }
+  @media (max-width: 760px) { .wide { margin-left: 0; margin-right: 0; } }
+
+  .masthead { font: 14px/1.4 system-ui, sans-serif; color: var(--grey); padding-bottom: 14px;
+              border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .masthead a { color: var(--grey); }
+  h1 { font-size: 44px; line-height: 1.12; letter-spacing: -0.01em; margin: 36px 0 12px; }
+  .dek { font-size: 22px; line-height: 1.45; color: var(--grey); margin: 0 0 18px; }
+  .byline { font: 14px/1.5 system-ui, sans-serif; color: var(--grey); margin: 0 0 36px; }
+  h2 { font-size: 26px; line-height: 1.25; margin: 2.2em 0 0.5em; }
+  p { margin: 0 0 1em; }
+  a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  sup a { text-decoration: none; font: 12px system-ui, sans-serif; padding: 0 1px; }
+
+  figure { margin: 28px 0 32px; }
+  figure img { width: 100%; height: auto; display: block; }
+  figcaption { font: 14px/1.45 system-ui, sans-serif; color: var(--grey); margin-top: 8px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 20px 0 28px;
+          font: 15px/1.4 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  th, td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  thead th { border-bottom: 1px solid var(--ink); color: var(--grey); font-weight: 600; }
+  td.num, th.num { text-align: right; }
+  .table-wrap { overflow-x: auto; margin: 20px 0 28px; }
+  .table-wrap table { margin: 0; min-width: 520px; }
+  tr.flag td { font-weight: 600; }
+
+  pre { background: var(--soft); padding: 14px 16px; overflow-x: auto;
+        font: 14px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  code { font: 0.85em ui-monospace, "Cascadia Mono", Consolas, monospace; background: var(--soft); padding: 1px 4px; }
+
+  /* City lookup: the sentence is the interface. */
+  .lookup { font-size: 22px; margin: 8px 0 12px; }
+  .lookup select {
+    font: inherit; font-weight: 700; color: var(--link); background: transparent;
+    border: 0; border-bottom: 2px solid var(--link); padding: 0 2px; cursor: pointer;
+  }
+  .lookup select:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  .portrait { min-height: 6.5em; }
+  .small-multiples { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin: 20px 0 8px; }
+  @media (max-width: 620px) { .small-multiples { grid-template-columns: 1fr; } }
+  .small-multiples h3 { font: 600 14px/1.3 system-ui, sans-serif; margin: 0 0 6px; }
+  .small-multiples svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .small-multiples svg text { font: 11px system-ui, sans-serif; fill: var(--grey); }
+  .readout { font: 14px/1.4 system-ui, sans-serif; color: var(--ink); min-height: 2.8em; margin-top: 4px; }
+  .legend { font: 13px/1.4 system-ui, sans-serif; color: var(--grey); margin: 0 0 28px; }
+  .legend span { white-space: nowrap; margin-right: 14px; }
+  .legend i { display: inline-block; width: 18px; vertical-align: middle; margin-right: 5px; border-top: 2px solid var(--link); }
+  .legend i.dash { border-top: 2px dashed var(--grey); }
+  .legend i.band { border-top: 8px solid #dfe7f1; }
+  .fallback { font: 15px/1.5 system-ui, sans-serif; color: var(--grey); }
+
+  ol.notes { font: 15px/1.5 system-ui, sans-serif; padding-left: 22px; }
+  ol.notes li { margin-bottom: 8px; }
+  footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--rule);
+           font: 14px/1.5 system-ui, sans-serif; color: var(--grey); }
+  @media (max-width: 520px) {
+    body { font-size: 18px; }
+    h1 { font-size: 34px; }
+    .dek, .lookup { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<article>
+
+<div class="masthead">
+  <span>Weather Data Visualization</span>
+  <span><a href="https://github.com/developwithsourav/Weather-Data-Visualization">Code</a> ·
+        <a href="https://github.com/developwithsourav/Weather-Data-Visualization/blob/main/notebooks/analysis.ipynb">Notebook</a> ·
+        <a href="https://github.com/developwithsourav/Weather-Data-Visualization/releases/latest">Data</a></span>
+</div>
+
+<h1>Five years of weather in 30 Indian cities</h1>
+<p class="dek">Daily data from 2021 to 2025, what it shows, and how it compares with the official record.</p>
+<p class="byline">By Sourav Kumar and Avijit Sakkarwal · October 2026 · Data to 31 December 2025</p>
+
+<p>We collected 54,780 days of weather: one row per city per day, for 30 cities, five full years. Most of what follows is what you would expect from Indian weather, measured. Three quarters of the rain comes with the monsoon, the north swings between cold winters and fierce summers, and the coast barely changes. Some of it is less expected, including how far a weather model's numbers can sit from a thermometer's, and how we found that the data in the first version of this project was partly made up.</p>
+
+<h2>First, the data had to be real</h2>
+<p>The first version of this project used a downloaded dataset with humidity and pressure columns. The charts looked plausible. The numbers did not: Srinagar came out as humid as Mumbai, and Mumbai's humidity did not rise in the monsoon.</p>
+<p>Real weather has habits that random numbers lack. Today is close to yesterday. The month of the year explains much of the variation. And cities differ from each other by more than chance. We turned each habit into a score and ran it on both datasets.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dataset</th><th>Variable</th><th class="num">Memory</th><th class="num">Seasons</th><th class="num">Cities differ</th><th>Verdict</th></tr></thead>
+  <tbody id="realism-rows">
+    <tr><td>First version</td><td>Temperature</td><td class="num">0.98</td><td class="num">0.84</td><td class="num">0.49</td><td>looks real</td></tr>
+    <tr class="flag"><td>First version</td><td>Humidity</td><td class="num">0.00</td><td class="num">0.00</td><td class="num">0.02</td><td>looks random</td></tr>
+    <tr class="flag"><td>First version</td><td>Pressure</td><td class="num">0.00</td><td class="num">0.00</td><td class="num">0.02</td><td>looks random</td></tr>
+    <tr><td>Current</td><td>Temperature</td><td class="num">0.98</td><td class="num">0.82</td><td class="num">0.65</td><td>looks real</td></tr>
+    <tr><td>Current</td><td>Humidity</td><td class="num">0.95</td><td class="num">0.67</td><td class="num">0.34</td><td>looks real</td></tr>
+    <tr><td>Current</td><td>Pressure</td><td class="num">0.97</td><td class="num">0.82</td><td class="num">0.24</td><td>looks real</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The old temperature passes. The old humidity and pressure score close to zero on every test, the same as a column of random numbers we generated for comparison. So we rebuilt the project on data from Open-Meteo, where every variable passes. The test runs on every build, and our own tests check that it tells weather-like data from noise.</p>
+
+<figure class="wide">
+  <img src="charts/11_realism_check.png" alt="Bar chart of day-to-day memory. Temperature scores 0.98 in both datasets. Humidity scores 0.00 in the first version and 0.95 now. Pressure scores 0.00 in the first version and 0.97 now.">
+</figure>
+
+<h2>Look up a city</h2>
+<p class="lookup">Show me <select id="city" aria-label="City"><option>Delhi</option></select></p>
+<p class="portrait" id="portrait">Delhi averages 24.7 °C. Its hottest day in these five years was 46.0 °C on 26 May 2024, and its coldest night 3.2 °C on 18 January 2023. It gets about 845 mm of rain a year, 80% of it from June to September.</p>
+<p class="fallback" id="fallback" hidden>The city lookup needs the page to be served rather than opened as a file. Run <code>python run_all.py --serve</code> and open <code>localhost:8000</code>.</p>
+
+<div class="small-multiples">
+  <div>
+    <h3>Temperature by month, °C</h3>
+    <svg id="temp-chart" viewBox="0 0 320 190" aria-label="Monthly temperature for the chosen city"></svg>
+    <div class="readout" id="temp-readout">Hover over a month.</div>
+  </div>
+  <div>
+    <h3>Rain by month, mm</h3>
+    <svg id="rain-chart" viewBox="0 0 320 190" aria-label="Monthly rain for the chosen city"></svg>
+    <div class="readout" id="rain-readout">&nbsp;</div>
+  </div>
+</div>
+<p class="legend"><span><i></i>this city</span><span><i class="band"></i>daily low to high</span><span><i class="dash"></i>average of all 30 cities</span></p>
+
+<h2>The monsoon brings three quarters of the rain</h2>
+<p>Across the 30 cities, 74% of the rain falls between June and September. The India Meteorological Department (IMD) puts the national figure at about 75%,<sup><a href="#n1">1</a></sup> so this sample matches the country as a whole. Mumbai is the wettest city at about 2,434 mm a year, with 855 mm in an average July. Jaipur is the driest at about 696 mm.</p>
+<p>Chennai and Madurai keep a different calendar. They get 57% and 51% of their rain from October to December. IMD's Chennai office reports the same pattern for Tamil Nadu, where the north-east monsoon brings 48% of the year's rain because the state lies in a rain shadow during the south-west monsoon.<sup><a href="#n2">2</a></sup></p>
+<figure class="wide">
+  <img src="charts/2_rain_by_month.png" alt="Heatmap of average rain per month for each of the 30 cities. Most cities are wettest in July. Chennai and Madurai are wettest in October and November." loading="lazy">
+  <figcaption>Average rain per month, 2021 to 2025, cities sorted from wettest to driest.</figcaption>
+</figure>
+
+<h2>2024 was a heatwave year</h2>
+<p>We counted the days when a city's maximum reached 45 °C. 2024 had 90 of them. 2022 had 23, and the other three years had one between them. Of the 2024 days, 64 fell in May, spread over 15 cities. The highest value in the data is 48.0 °C in Gwalior on 28 May 2024.</p>
+<figure class="wide">
+  <img src="charts/9_heat_days.png" alt="Bar chart of city-days at 45 °C or more: none in 2021, 23 in 2022, none in 2023, 90 in 2024 and 1 in 2025." loading="lazy">
+</figure>
+<p>That same day, IMD stations recorded 50.5 °C in Churu and 49.9 °C at Mungeshpur in Delhi.<sup><a href="#n3">3</a></sup> Our figure for Delhi is 45.8 °C. The gap is expected. These values come from a weather model that averages a grid cell several kilometres across, which smooths away the hottest spots that a single thermometer records. The data is reliable for comparing cities and years, and it understates the peaks.</p>
+
+<h2>Each year was a little warmer</h2>
+<p>The average across all 30 cities rose every year, from 24.93 °C in 2021 to 25.46 °C in 2025, and 2025 was the warmest of the five years for half of the cities. IMD called 2024 India's warmest year since national records began in 1901, at 0.65 °C above the 1991 to 2020 average.<sup><a href="#n4">4</a></sup> Five years cannot show a trend on their own, but these point the same way as the long record.</p>
+<figure class="wide">
+  <img src="charts/8_yearly_temperature.png" alt="Line chart of average temperature across 30 cities, rising from 24.93 °C in 2021 to 25.46 °C in 2025." loading="lazy">
+</figure>
+
+<h2>The 2024 monsoon, close up</h2>
+<p>2024 was also the wettest monsoon of the five years, 16% above our five-year average. IMD measured it at 108% of its long period average for the whole country.<sup><a href="#n5">5</a></sup> The two figures are not directly comparable, since ours compares with five years and IMD's with decades, but they agree that 2024 was wetter than usual.</p>
+<figure class="wide">
+  <img src="charts/10_monsoon_by_year.png" alt="Bar chart of June to September rain averaged over 30 cities: 889 mm in 2021, 926 in 2022, 852 in 2023, 1,079 in 2024 and 909 in 2025." loading="lazy">
+</figure>
+<p>City by city it is messier. Chandigarh and Ludhiana got about 70% of their usual monsoon rain in 2024, while Vijayawada got 150%. Guwahati was 23% above its own average in our data, yet IMD reported north-east India as a whole at 86% of normal.<sup><a href="#n5">5</a></sup> One city is not a region, and modelled rainfall is less reliable than modelled temperature. A disagreement like this is a reason to look closer, not a finding to report.</p>
+
+<h2>The sea sets the swing</h2>
+<p>Madurai, Chennai and Mumbai stay within six degrees between their warmest and coolest month. Srinagar spans 24.6 degrees. Delhi is hottest in June rather than July, because monsoon cloud and rain take about three degrees off in July.</p>
+<figure class="wide">
+  <img src="charts/1_monthly_temperature.png" alt="Line chart of monthly mean temperature for Delhi, Mumbai, Bengaluru and Srinagar." loading="lazy">
+</figure>
+
+<h2>Hot months have low pressure</h2>
+<p>Average sea-level pressure falls from 1,015.7 hPa in January to 1,001.5 hPa in July, a mirror image of the temperature curve. Across all cities the correlation between the two is −0.76. Inside a single city it ranges from −0.92 in Srinagar to −0.29 in Pune. A correlation needs variation to show up, so Pune's weak figure says more about its mild climate than about the physics.</p>
+
+<h2>A third of the rain falls on ten days</h2>
+<p>On average, 35% of a year's rain falls on its ten wettest days. In Chandigarh it is 48%, in Kolkata 22%. Jaipur has about 54 days a year with at least 2.5 mm of rain, Guwahati about 148. Two cities with similar yearly totals can face very different flooding and storage problems.</p>
+
+<h2>About the data</h2>
+<p>Daily values come from the Open-Meteo Historical Weather API, which blends the ERA5 reanalysis (about 25 km cells), ERA5-Land (about 11 km) and the ECMWF IFS model (9 km).<sup><a href="#n6">6</a></sup> Every figure on this page is calculated from that data.</p>
+<p>The limits are worth stating plainly. These are model estimates for a grid cell, not station readings. Five years is enough to compare cities and spot unusual years, not to measure climate change. And the 30 cities are mostly large ones, leaving out Kerala, most of the Himalaya and most of the north-east.</p>
+
+<h2>Run it yourself</h2>
+<p>With Python 3.12 and git installed, this rebuilds everything on this page in about 15 seconds and serves it at <code>localhost:8000</code>. The data is already in the repository.</p>
+<pre>git clone https://github.com/developwithsourav/Weather-Data-Visualization
+cd Weather-Data-Visualization
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements-dev.txt
+python run_all.py --serve</pre>
+<p>On macOS or Linux, activate with <code>source .venv/bin/activate</code>.</p>
+
+<h2>Notes</h2>
+<ol class="notes">
+  <li id="n1">India Meteorological Department, <a href="https://mausam.imd.gov.in/imd_latest/monsoon_report_2025_2.pdf">Monsoon Report 2025</a>, preface.</li>
+  <li id="n2">India Meteorological Department, Regional Meteorological Centre Chennai, <a href="https://mausam.imd.gov.in/chennai/mcdata/ne_monsoon_2022.pdf">North-East Monsoon 2022 report</a>.</li>
+  <li id="n3">AIR News, <a href="https://www.newsonair.gov.in/several-parts-of-country-continues-to-reel-under-severe-heat-wave-conditions-breaking-past-records">Several parts of country continue to reel under severe heat wave conditions</a>, 28 May 2024.</li>
+  <li id="n4">India Meteorological Department, <a href="https://metnet.imd.gov.in/docs/imdnews/ANNUAL_REPORT2024English.pdf">Annual Report 2024</a>.</li>
+  <li id="n5">India Meteorological Department, <a href="https://internal.imd.gov.in/press_release/20241001_pr_3310.pdf">Salient features of the 2024 south-west monsoon season</a>, 1 October 2024.</li>
+  <li id="n6">Open-Meteo, <a href="https://open-meteo.com/en/docs/historical-weather-api">Historical Weather API documentation</a>. Weather data by Open-Meteo.com under <a href="https://open-meteo.com/en/license">CC BY 4.0</a>.</li>
+</ol>
+
+<footer>Code under the MIT licence. Weather data by Open-Meteo.com under CC BY 4.0.</footer>
+
+</article>
+
+<script>
+// City lookup. Reads data.json, written by scripts/build_site.py.
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 320, H = 190, LEFT = 30, RIGHT = 4, TOP = 8, BOTTOM = 22;
+  const LINK = "#1f4e8c", GREY = "#6b6a66", RULE = "#dcdad4", BAND = "#dfe7f1";
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+                  "August", "September", "October", "November", "December"];
+
+  function add(parent, tag, attrs) {
+    const node = document.createElementNS(NS, tag);
+    for (const key in attrs) node.setAttribute(key, attrs[key]);
+    parent.appendChild(node);
+    return node;
+  }
+
+  function frame(svg, low, high, step) {
+    svg.replaceChildren();
+    const x = (i) => LEFT + (i + 0.5) * (W - LEFT - RIGHT) / 12;
+    const y = (v) => H - BOTTOM - (v - low) / (high - low) * (H - TOP - BOTTOM);
+    for (let v = low; v <= high + 1e-9; v += step) {
+      add(svg, "line", { x1: LEFT, x2: W - RIGHT, y1: y(v), y2: y(v), stroke: RULE, "stroke-width": 1 });
+      add(svg, "text", { x: LEFT - 6, y: y(v) + 4, "text-anchor": "end" }).textContent = String(Math.round(v)).replace("-", "−");
+    }
+    ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].forEach((m, i) => {
+      add(svg, "text", { x: x(i), y: H - 6, "text-anchor": "middle" }).textContent = m;
+    });
+    return { x, y };
+  }
+
+  function path(points) {
+    return points.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
+  }
+
+  // A thin vertical guide plus one invisible strip per month, so hovering or tapping anywhere picks a month.
+  function hover(svg, x, readout, describe) {
+    const guide = add(svg, "line", { y1: TOP, y2: H - BOTTOM, stroke: GREY, "stroke-width": 1, opacity: 0 });
+    const step = (W - LEFT - RIGHT) / 12;
+    for (let i = 0; i < 12; i++) {
+      const strip = add(svg, "rect", { x: x(i) - step / 2, y: TOP, width: step, height: H - TOP - BOTTOM, fill: "transparent" });
+      const show = () => {
+        guide.setAttribute("x1", x(i));
+        guide.setAttribute("x2", x(i));
+        guide.setAttribute("opacity", 1);
+        readout.textContent = describe(i);
+      };
+      strip.addEventListener("mouseenter", show);
+      strip.addEventListener("click", show);
+    }
+    svg.addEventListener("mouseleave", () => guide.setAttribute("opacity", 0));
+  }
+
+  function temperatureChart(data, city) {
+    const svg = document.getElementById("temp-chart"), m = city.monthly, all = data.all_cities.temp_mean;
+    const low = Math.floor(Math.min(...m.temp_min, ...all) / 10) * 10;
+    const high = Math.ceil(Math.max(...m.temp_max, ...all) / 10) * 10;
+    const { x, y } = frame(svg, low, high, 10);
+    const top = m.temp_max.map((v, i) => [x(i), y(v)]);
+    const bottom = m.temp_min.map((v, i) => [x(i), y(v)]).reverse();
+    add(svg, "path", { d: path(top.concat(bottom)) + "Z", fill: BAND });
+    add(svg, "path", { d: path(all.map((v, i) => [x(i), y(v)])), fill: "none", stroke: GREY,
+                       "stroke-width": 1.5, "stroke-dasharray": "3 3" });
+    add(svg, "path", { d: path(m.temp_mean.map((v, i) => [x(i), y(v)])), fill: "none", stroke: LINK, "stroke-width": 2 });
+    hover(svg, x, document.getElementById("temp-readout"), (i) =>
+      `${MONTHS[i]}: ${degrees(m.temp_mean[i])} °C on average, ${degrees(m.temp_min[i])} to ${degrees(m.temp_max[i])} °C. All cities ${degrees(all[i])} °C.`);
+  }
+
+  function rainChart(data, city) {
+    const svg = document.getElementById("rain-chart"), rain = city.monthly.rain, all = data.all_cities.rain;
+    const peak = Math.max(...rain, ...all);
+    const step = peak > 600 ? 200 : peak > 240 ? 100 : 50;
+    const { x, y } = frame(svg, 0, Math.ceil(peak / step) * step, step);
+    const width = (W - LEFT - RIGHT) / 12 * 0.62;
+    rain.forEach((v, i) => add(svg, "rect", { x: x(i) - width / 2, y: y(v), width,
+                                              height: Math.max(0, y(0) - y(v)), fill: LINK }));
+    add(svg, "path", { d: path(all.map((v, i) => [x(i), y(v)])), fill: "none", stroke: GREY,
+                       "stroke-width": 1.5, "stroke-dasharray": "3 3" });
+    hover(svg, x, document.getElementById("rain-readout"), (i) =>
+      `${MONTHS[i]}: ${Math.round(rain[i])} mm. All cities ${Math.round(all[i])} mm.`);
+  }
+
+  // A real minus sign reads better than a hyphen in front of a temperature.
+  function degrees(value) { return (value < 0 ? "−" : "") + Math.abs(value).toFixed(1); }
+
+  function longMonth(short) { return MONTHS.find((name) => name.startsWith(short)); }
+  function longDate(text) {
+    const [day, month, year] = text.split(" ");
+    return `${Number(day)} ${longMonth(month)} ${year}`;
+  }
+
+  function portrait(name, s) {
+    const heat = s.days_45 === 0 ? "It never reached 45 °C."
+      : `It reached 45 °C on ${s.days_45} ${s.days_45 === 1 ? "day" : "days"}.`;
+    return `${name} averages ${s.average_temperature} °C, and its warmest month is ${longMonth(s.warmest_month)}. ` +
+      `Its hottest day in these five years was ${degrees(s.hottest.value)} °C on ${longDate(s.hottest.date)}, ` +
+      `and its coldest night ${degrees(s.coldest.value)} °C on ${longDate(s.coldest.date)}. ${heat} ` +
+      `It gets about ${s.yearly_rain.toLocaleString("en-IN")} mm of rain a year, ${s.monsoon_share}% of it ` +
+      `from June to September, and its wettest month is ${longMonth(s.wettest_month)}.`;
+  }
+
+  function realism(rows) {
+    if (!rows) return;
+    const body = document.getElementById("realism-rows");
+    body.replaceChildren();
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+      if (r.verdict === "looks random") tr.className = "flag";
+      const fmt = (v) => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+      tr.innerHTML = `<td>${r.dataset.replace(" (Open-Meteo)", "")}</td><td>${r.variable}</td>` +
+        `<td class="num">${fmt(r.memory)}</td><td class="num">${fmt(r.season)}</td>` +
+        `<td class="num">${fmt(r.place)}</td><td>${r.verdict}</td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  fetch("data.json").then((r) => r.json()).then((data) => {
+    const select = document.getElementById("city");
+    const names = Object.keys(data.cities).sort();
+    select.innerHTML = names.map((n) => `<option>${n}</option>`).join("");
+    const wanted = decodeURIComponent(location.hash.slice(1));
+    select.value = names.includes(wanted) ? wanted : "Delhi";
+    const show = () => {
+      const city = data.cities[select.value];
+      document.getElementById("portrait").textContent = portrait(select.value, city.stats);
+      temperatureChart(data, city);
+      rainChart(data, city);
+      document.getElementById("temp-readout").textContent = "Hover over a month.";
+      document.getElementById("rain-readout").innerHTML = "&nbsp;";
+      history.replaceState(null, "", "#" + encodeURIComponent(select.value));
+    };
+    select.addEventListener("change", show);
+    // Typing a city into the address, such as #Chennai, also works.
+    window.addEventListener("hashchange", () => {
+      const name = decodeURIComponent(location.hash.slice(1));
+      if (names.includes(name) && name !== select.value) { select.value = name; show(); }
+    });
+    show();
+    realism(data.realism);
+  }).catch(() => { document.getElementById("fallback").hidden = false; });
+})();
+</script>
+</body>
+</html>
